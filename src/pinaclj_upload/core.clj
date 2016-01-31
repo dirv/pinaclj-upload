@@ -2,7 +2,9 @@
   (:gen-class)
   (:require [pinaclj-upload.jclouds :as jclouds]
             [pinaclj.nio :as nio]
-            [pinaclj.files :as files]))
+            [pinaclj.files :as files]
+            [pantomime.mime :as mime])
+  (:import (java.nio.file Files)))
 
 (def site-definition-file "site.clj")
 (def pages-directory "pages")
@@ -15,8 +17,12 @@
     (fn [api file-path]
       (let [upload-path (str (nio/relativize root-fs file-path))]
         (with-open [fs (nio/input-stream file-path)]
-          (println "Putting" file-path)
-          (jclouds/put api upload-path fs))))
+          (println "Putting" (str file-path))
+          (jclouds/put api
+                       upload-path
+                       fs
+                       (mime/mime-type-of (str file-path))
+                       (Files/size file-path)))))
     api files))
 
 (defn run [api-fn directory]
