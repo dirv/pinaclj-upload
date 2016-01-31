@@ -23,10 +23,11 @@
 (deftype JClouds [api object-api]
   Upload
   (put [this file-path input-stream]
-       (.put object-api file-path (Payloads/newInputStreamPayload input-stream)))
+       (.put object-api file-path (Payloads/newInputStreamPayload input-stream))
+       this)
   java.io.Closeable
   (close [this] (.close api)))
 
 (defn make [config]
   (let [api (build-api config)]
-    (JClouds. api (object-api api config))))
+    (->JClouds api (object-api api config))))
