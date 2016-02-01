@@ -1,5 +1,7 @@
 (ns pinaclj-upload.jclouds
-  (:import (org.jclouds.openstack.swift.v1.blobstore RegionScopedBlobStoreContext)
+  (:import (java.util Properties)
+           (org.jclouds.openstack.keystone.v2_0.config CredentialTypes KeystoneProperties)
+           (org.jclouds.openstack.swift.v1.blobstore RegionScopedBlobStoreContext)
            (org.jclouds ContextBuilder)
            (org.jclouds.logging.config ConsoleLoggingModule)
            (org.jclouds.rackspace.cloudfiles.v1 CloudFilesApi)
@@ -9,9 +11,20 @@
 (defprotocol Upload
   (put [this file-path input-stream content-type file-size]))
 
-(defn- build-api [{:keys [cloud username api-key region]}]
+(def password-credentials
+  (let [props (Properties.)]
+    (.put props KeystoneProperties/CREDENTIAL_TYPE CredentialTypes/PASSWORD_CREDENTIALS)
+    props))
+
+(defn- add-credential-type [ctxt-builder password]
+  (if password
+    (.overrides ctxt-builder password-credentials)
+    ctxt-builder))
+
+(defn- build-api [{:keys [cloud username api-key password region]}]
   (-> (ContextBuilder/newBuilder cloud)
-      (.credentials username api-key)
+      (.credentials username (or api-key password))
+      (add-credential-type password)
       (.modules [(ConsoleLoggingModule.)])
       (.buildView RegionScopedBlobStoreContext)
       (.getBlobStore region)
